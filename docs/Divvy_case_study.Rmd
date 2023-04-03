@@ -5,7 +5,7 @@ date: "2023-03-31"
 output:
   html_document: default
   pdf_document: default
-mainfont: Arial
+mainfont: Time New Roman
 papersize: a4
 ---
 
@@ -13,12 +13,12 @@ papersize: a4
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Senario
+## **Senario**
 I am a junior data analyst working in the marketing analyst team at Cyclistic, a bike-share company in Chicago. The director of marketing believes the company’s future success depends on maximizing the number of annual memberships. Therefore, my team wants to understand how casual riders and annual members use Cyclistic bikes differently. From these insights, my team will design a new marketing strategy to convert casual riders into annual members. But first, Cyclistic executives must approve my recommendations, so they must be backed up with compelling data insights and professional data visualizations.
 
 I was assigned to analyze the descriptive insight from the Divvy customer and comparing between casual member and annual member. The business question is "How to convert a casual member to become a annual member.
 
-## Preparing the data 
+## **Preparing the data** 
 ### Step 1: Getting data
 
 I use the public data set from https://divvy-tripdata.s3.amazonaws.com/index.html with 4 data sets to analyze including
@@ -45,6 +45,8 @@ library(lubridate)
 library(hms)
 library(ggplot2)
 library(patchwork)
+library(forcats)
+library(scales)
 ```
 
 ### Step 4: Import data
@@ -70,8 +72,8 @@ colnames(q4_2019)
 colnames(q2_2019)
 colnames(q1_2020)
 ```
-### Step  6: Manipulate data and merge to a single file.
-#### 6.1 Renaming column name to be consistence. 
+### Step 6: Manipulate data and merge to a single file.
+#### **6.1 Renaming column name to be consistence.**
 
 
 ```{r manipulate data}
@@ -109,7 +111,7 @@ colnames(q1_2020)
                    ,member_casual = "User Type"))
 ```
 
-#### 6.2 Covert ride_id and rideable_type to character to stack correctly.
+#### **6.2 Covert ride_id and rideable_type to character to stack correctly.**
 
 ```{r Convert datatype1}
 q4_2019 <-  mutate(q4_2019, ride_id = as.character(ride_id)
@@ -120,7 +122,7 @@ q2_2019 <-  mutate(q2_2019, ride_id = as.character(ride_id)
                    ,rideable_type = as.character(rideable_type)) 
 ```
 
-#### 6.3 Merging from 4 files to a single file and drop unrelated columns out of dataframe.
+#### **6.3 Merging from 4 files to a single file and drop unrelated columns out of dataframe.**
 
 ```{r merge and drop}
 all_trips <- bind_rows(q2_2019, q3_2019, q4_2019, q1_2020)
@@ -140,7 +142,7 @@ tibble(all_trips)
 
 ### Step 7: Start working with a single dataframe.
 
-#### 7.1 Reinspect the dataframe.
+#### **7.1 Reinspect the dataframe.**
 
 I started focus on member type based on main objective of analysis. I inspected that column by
 ```{r inpect member type}
@@ -158,12 +160,12 @@ all_trips <-  all_trips %>%
                                 ,"Subscriber" = "member"
                                 ,"Customer" = "casual"))
 ```
-Don't forget to double-check the result.
+Double-check the result.
 ```{r reinpect member type}
 table(all_trips$member_casual)
 ```
 
-#### 7.2 Manipulate and create aggregate ride data.
+#### **7.2 Manipulate and create aggregate ride data.**
 
 ##### Create Day, Month, Year and Day of Week coloumns for further analysis.
 Because in the started_at and ended_at columns contain the YYYY-MM-DD with "POSIXct" and "POSIXt" classes.
@@ -189,7 +191,23 @@ In the dataframe include unintentional errors. I decided to ask the project mana
 all_trips_v2 <- all_trips[!(all_trips$start_station_name == "HQ QR" | all_trips$ride_length<0),]
 ```
 
-## Analyze the data
+#### Convert Month/Year to Quarter 
+```{r convert quarter}
+all_trips_v2 <- mutate(all_trips_v2, quarter = quarter(all_trips_v2$started_at)) |>
+                  mutate(Q = case_when(
+                    quarter == 1 ~ "Q1_2020",
+                    quarter == 2 ~ "Q2_2019",
+                    quarter == 3 ~ "Q3_2019",
+                    quarter == 4 ~ "Q4_2019",
+                    TRUE ~ "Unidentified"
+                  )) |>
+                  mutate(Q = as.factor(Q))
+```
+
+
+
+## **Analyze the data**
+
 ### Descriptive statistics
 ```{r basic stats}
 all_trips_v2 |>
@@ -203,6 +221,12 @@ aggregate(all_trips_v2$ride_length ~ all_trips_v2$member_casual, FUN = median)
 aggregate(all_trips_v2$ride_length ~ all_trips_v2$member_casual, FUN = max)
 aggregate(all_trips_v2$ride_length ~ all_trips_v2$member_casual, FUN = min)
 
+```
+### Member Type Proportion.
+```{r member type proportion}
+all_trips_v2|>
+  group_by(member_casual) |>
+  summarise(member_type_n = n())
 ```
 
 ### The average ride length between annual member(member) and casual ride(casual) by day of week.
@@ -219,7 +243,7 @@ aggregate(all_trips_v2$ride_length ~ all_trips_v2$member_casual +
 ```
 
 ### Ride Distribution by Number of Rides and Average Duration Grouped by Member Types and Day of Week
-```{r rides dist.}
+```{r rides dist DOF.}
 all_trips_v2 %>% 
   mutate(weekday = wday(started_at, label = TRUE)) %>%  #creates weekday field using wday()
   group_by(member_casual, weekday) %>%  #groups by usertype and weekday
@@ -228,8 +252,44 @@ all_trips_v2 %>%
   arrange(member_casual, weekday)	# sorts
 ```
 
-## Data Visualization 
-### Number of rides by rider type
+### The Distribution of Rides by Quarter and Member Type.
+```{r quarter distribution}
+all_trips_v2 |>
+  group_by(Q, member_casual) |>
+  summarise(number_of_rides = n())|>
+  arrange(Q) |>
+  mutate(Q = factor(
+    Q,
+    levels = c("Q2_2019", "Q3_2019", "Q4_2019", "Q1_2020"),
+    ordered = TRUE))
+```
+
+<br>
+
+## **Data Visualization** 
+
+### Member Types Proportion
+```{r member type proportion graph}
+all_trips_v2|>
+  group_by(member_casual) |>
+  summarise(member_type_n = n()) |>
+  ggplot(aes(x = member_casual, y = member_type_n, 
+             fill = member_casual)) + 
+  geom_col(width = 0.6) + 
+  scale_y_continuous(labels = comma) + # fix the y-axis scale 3e+06 bla bla
+  labs(
+    title = "Types of Rider Distribution",
+    x = "Member Type",
+    y = "Number of rides",
+    caption = "Source: https://divvy-tripdata.s3.amazonaws.com/index.html",
+    fill = "Member Type"
+  ) +
+  geom_text(aes(label = member_type_n),
+            position = position_stack(vjust = 1.1)) +
+  theme(plot.title = element_text(size = 20))
+```
+
+### Number of Rides by Rider Types on Day of Week.
 ```{r N of rides~type}
 all_trips_v2 %>% 
   mutate(weekday = wday(started_at, label = TRUE)) %>% 
@@ -239,12 +299,15 @@ all_trips_v2 %>%
   arrange(member_casual, weekday)  %>% 
   ggplot(aes(x = weekday, y = number_of_rides, fill = member_casual)) +
   geom_col(position = "dodge") + 
-  labs(
-    title = "Number of rides by rider type",
+  scale_y_continuous(labels = comma) +
+    labs(
+    title = "Number of Rides by Rider Types on Day of Week.",
     x = "Day of Week",
     y = "Number of Rides",
-    caption = "Source: https://divvy-tripdata.s3.amazonaws.com/index.html"
-  )
+    caption = "Source: https://divvy-tripdata.s3.amazonaws.com/index.html",
+    fill = "Member Type"
+  ) +
+  theme(plot.title = element_text(size = 20))
 ```
 
 ### Average Duration between Member Types and Day off Week
@@ -257,10 +320,76 @@ all_trips_v2 %>%
   arrange(member_casual, weekday)  %>% 
   ggplot(aes(x = weekday, y = average_duration, fill = member_casual)) +
   geom_col(position = "dodge") + 
-    labs(
-    title = "Average Duration between Member Types and Day off Week",
+  labs(
+    title = "Average Duration by Member Types and Day of Week",
     x = "Day of Week",
-    y = "Average Duration",
-    caption = "Source: https://divvy-tripdata.s3.amazonaws.com/index.html"
-  )
+    y = "Average Duration (second)",
+    caption = "Source: https://divvy-tripdata.s3.amazonaws.com/index.html",
+    fill = "Member Type"
+  )+
+  theme(plot.title = element_text(size = 18))
 ```
+
+### Top 10 station with highest number of rides stack by member types
+```{r top 10 station}
+all_trips_v2 |>
+  group_by(start_station_name) |>
+  summarise(total_ride = n()) |>
+  inner_join(
+    all_trips_v2 |>
+      group_by(start_station_name, member_casual) |>
+      summarise(number_of_rides = n()) |>
+      arrange(start_station_name, desc(number_of_rides)), by = "start_station_name") |>
+  arrange(desc(total_ride), start_station_name) |>
+  slice(1:20) |>
+  ggplot(aes(x = reorder(start_station_name, -number_of_rides), y = number_of_rides,
+             fill = member_casual)) + 
+  geom_col() +
+  labs(
+    title = "Top 10 Stations with Highest rides",
+    x = "Station Name",
+    y = "Number of Rides",
+    caption = "Source: https://divvy-tripdata.s3.amazonaws.com/index.html",
+    fill = "Member Type"
+  ) + 
+  geom_text(aes(label = number_of_rides),
+            position = position_stack(vjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.5, size = 10),
+        plot.title = element_text(size = 20))
+```
+
+### The Distribution of Rides by Quarter and Member Type.
+``` {r graph of quarter}
+all_trips_v2 |>
+  group_by(Q, member_casual) |>
+  summarise(number_of_rides = n())|>
+  arrange(Q) |>
+  mutate(Q = factor(
+    Q,
+    levels = c("Q2_2019", "Q3_2019", "Q4_2019", "Q1_2020"),
+    ordered = TRUE)) |>
+  ggplot(aes(x = Q, y = number_of_rides, fill = member_casual)) + 
+  geom_col() + 
+  labs(
+    title = "The Number of Rides by Quarter.",
+    subtitle = "From Q2-2019 to Q1-2020",
+    x = "Quarter",
+    y = "Number of Rides",
+    caption = "Source: https://divvy-tripdata.s3.amazonaws.com/index.html",
+    fill = "Member Type"
+  ) +
+  theme(plot.title = element_text(size = 20))
+```
+
+
+## **My Recommendations**
+
+### 1. We should launch our marketing campaigns in the 2nd-Quarter to 3rd-Quarter for more reach our customers.
+
+### 2. We can start a marketing pre-launch at 
++ **Streeter Dr & Grand Avw**, 
++ **Lake Shore Dr & Monroe St**, 
++ **Michigan Ave & Oak St **, **Lake Shore Dr & North Blvd **, 
++ **Lake Shore Dr & North Blvd **
+
+### 3. The messages on canpaign should focus on the average duration of casual rider.
