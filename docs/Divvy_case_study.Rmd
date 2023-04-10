@@ -77,49 +77,49 @@ colnames(q1_2020)
 
 
 ```{r manipulate data}
-(q4_2019 <- rename(q4_2019
-                   ,ride_id = trip_id
-                   ,rideable_type = bikeid 
-                   ,started_at = start_time  
-                   ,ended_at = end_time  
-                   ,start_station_name = from_station_name 
-                   ,start_station_id = from_station_id 
-                   ,end_station_name = to_station_name 
-                   ,end_station_id = to_station_id 
-                   ,member_casual = usertype))
+(q4_2019 <- rename(q4_2019,
+                   ride_id = trip_id,
+                   rideable_type = bikeid,
+                   started_at = start_time,  
+                   ended_at = end_time,  
+                   start_station_name = from_station_name, 
+                   start_station_id = from_station_id, 
+                   end_station_name = to_station_name, 
+                   end_station_id = to_station_id, 
+                   member_casual = usertype))
 
-(q3_2019 <- rename(q3_2019
-                   ,ride_id = trip_id
-                   ,rideable_type = bikeid 
-                   ,started_at = start_time  
-                   ,ended_at = end_time  
-                   ,start_station_name = from_station_name 
-                   ,start_station_id = from_station_id 
-                   ,end_station_name = to_station_name 
-                   ,end_station_id = to_station_id 
-                   ,member_casual = usertype))
+(q3_2019 <- rename(q3_2019,
+                   ride_id = trip_id,
+                   rideable_type = bikeid, 
+                   started_at = start_time,  
+                   ended_at = end_time, 
+                   start_station_name = from_station_name, 
+                   start_station_id = from_station_id, 
+                   end_station_name = to_station_name, 
+                   end_station_id = to_station_id, 
+                   member_casual = usertype))
 
-(q2_2019 <- rename(q2_2019
-                   ,ride_id = "01 - Rental Details Rental ID"
-                   ,rideable_type = "01 - Rental Details Bike ID" 
-                   ,started_at = "01 - Rental Details Local Start Time"  
-                   ,ended_at = "01 - Rental Details Local End Time"  
-                   ,start_station_name = "03 - Rental Start Station Name" 
-                   ,start_station_id = "03 - Rental Start Station ID"
-                   ,end_station_name = "02 - Rental End Station Name" 
-                   ,end_station_id = "02 - Rental End Station ID"
-                   ,member_casual = "User Type"))
+(q2_2019 <- rename(q2_2019,
+                   ride_id = "01 - Rental Details Rental ID",
+                   rideable_type = "01 - Rental Details Bike ID", 
+                   started_at = "01 - Rental Details Local Start Time",  
+                   ended_at = "01 - Rental Details Local End Time",  
+                   start_station_name = "03 - Rental Start Station Name", 
+                   start_station_id = "03 - Rental Start Station ID",
+                   end_station_name = "02 - Rental End Station Name", 
+                   end_station_id = "02 - Rental End Station ID",
+                   member_casual = "User Type"))
 ```
 
 #### **6.2 Covert ride_id and rideable_type to character to stack correctly.**
 
 ```{r Convert datatype1}
-q4_2019 <-  mutate(q4_2019, ride_id = as.character(ride_id)
-                   ,rideable_type = as.character(rideable_type)) 
-q3_2019 <-  mutate(q3_2019, ride_id = as.character(ride_id)
-                   ,rideable_type = as.character(rideable_type)) 
-q2_2019 <-  mutate(q2_2019, ride_id = as.character(ride_id)
-                   ,rideable_type = as.character(rideable_type)) 
+q4_2019 <-  mutate(q4_2019, ride_id = as.character(ride_id),
+                   rideable_type = as.character(rideable_type)) 
+q3_2019 <-  mutate(q3_2019, ride_id = as.character(ride_id),
+                   rideable_type = as.character(rideable_type)) 
+q2_2019 <-  mutate(q2_2019, ride_id = as.character(ride_id),
+                   rideable_type = as.character(rideable_type)) 
 ```
 
 #### **6.3 Merging from 4 files to a single file and drop unrelated columns out of dataframe.**
@@ -156,9 +156,9 @@ In the member_casual columns, there are something not consistence.
 I fixed by
 ```{r fix the member type}
 all_trips <-  all_trips %>% 
-  mutate(member_casual = recode(member_casual
-                                ,"Subscriber" = "member"
-                                ,"Customer" = "casual"))
+  mutate(member_casual = recode(member_casual,
+                                "Subscriber" = "member",
+                                "Customer" = "casual"))
 ```
 Double-check the result.
 ```{r reinpect member type}
@@ -246,7 +246,7 @@ aggregate(all_trips_v2$ride_length ~ all_trips_v2$member_casual +
 ```{r rides dist DOF.}
 all_trips_v2 %>% 
   mutate(weekday = wday(started_at, label = TRUE)) %>%  #creates weekday field using wday()
-  group_by(member_casual, weekday) %>%  #groups by usertype and weekday
+  group_by(member_casual, weekday) %>%  #groups by user type and weekday
   summarise(number_of_rides = n()		#calculates the number of rides and average duration 
             ,average_duration = mean(ride_length)) %>% 	# calculates the average duration
   arrange(member_casual, weekday)	# sorts
@@ -286,7 +286,7 @@ all_trips_v2|>
   ) +
   geom_text(aes(label = member_type_n),
             position = position_stack(vjust = 1.1)) +
-  theme(plot.title = element_text(size = 20))
+  theme(plot.title = element_text(size = 18))
 ```
 
 ### Number of Rides by Rider Types on Day of Week.
@@ -307,7 +307,7 @@ all_trips_v2 %>%
     caption = "Source: https://divvy-tripdata.s3.amazonaws.com/index.html",
     fill = "Member Type"
   ) +
-  theme(plot.title = element_text(size = 20))
+  theme(plot.title = element_text(size = 18))
 ```
 
 ### Average Duration between Member Types and Day off Week
@@ -355,7 +355,7 @@ all_trips_v2 |>
   geom_text(aes(label = number_of_rides),
             position = position_stack(vjust = 0.5)) +
   theme(axis.text.x = element_text(angle = 60, vjust = 0.5, size = 10),
-        plot.title = element_text(size = 20))
+        plot.title = element_text(size = 18))
 ```
 
 ### The Distribution of Rides by Quarter and Member Type.
@@ -378,7 +378,7 @@ all_trips_v2 |>
     caption = "Source: https://divvy-tripdata.s3.amazonaws.com/index.html",
     fill = "Member Type"
   ) +
-  theme(plot.title = element_text(size = 20))
+  theme(plot.title = element_text(size = 18))
 ```
 
 
